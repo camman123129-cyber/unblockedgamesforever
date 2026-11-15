@@ -24,6 +24,15 @@ html,body{height:100%;margin:0;overflow:hidden;font-family:system-ui,-apple-syst
 .frow.sel{background:var(--accent);color:#fff}
 .fed{flex:1;display:flex;flex-direction:column;border-top:1px solid var(--border);min-height:0}
 .fed textarea{flex:1;height:auto;min-height:0;padding:8px}
+.wres{flex:1;overflow:auto;padding:10px;font-size:14px}
+.wtext{white-space:pre-wrap;line-height:1.5}
+.wlink{color:var(--accent);cursor:pointer;padding:4px 0}
+.wrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+.srow{margin-bottom:14px;font-size:14px}
+.srow>label{display:block;font-weight:600;margin-bottom:4px}
+.srow input:not([type=checkbox]),.srow select{padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--win);color:var(--text);font:inherit}
+.srow button{padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:var(--win);color:var(--text);cursor:pointer}
+.sin{display:flex;gap:6px}.sin input{flex:1;min-width:0}
 .icon{width:76px;text-align:center;color:#fff;cursor:pointer;margin-bottom:10px;user-select:none;font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 .icon .g{font-size:34px;display:block}
 .win{position:absolute;background:var(--win);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;min-width:220px;min-height:140px}
@@ -56,6 +65,14 @@ textarea{width:100%;height:100%;border:0;resize:none;background:transparent;colo
 <div id="menu"></div>
 <div id="bar"><button id="start">☰ Start</button><div id="tasks"></div><div id="clock"></div></div>
 <script>
+const SET=(()=>{let d={version:'alpha 0.1',theme:'auto',bg:'default',h24:false};try{Object.assign(d,JSON.parse(localStorage.getItem('webos-set')||'{}'))}catch(e){}d.version='alpha 0.1';return d})();
+const saveSet=()=>{try{localStorage.setItem('webos-set',JSON.stringify(SET))}catch(e){}};
+const BGS={blue:['#3b5bdb','#9c36b5'],sunset:['#f76707','#c2255c'],forest:['#2b8a3e','#1864ab'],night:['#212529','#364fc7']};
+const applySet=()=>{const r=document.documentElement;
+  if(SET.theme==='auto')delete r.dataset.theme;else r.dataset.theme=SET.theme;
+  const g=BGS[SET.bg];document.body.style.background=g?'linear-gradient(135deg,'+g[0]+','+g[1]+')':'';
+  const vm=document.getElementById('vmark');if(vm)vm.textContent='WebOS '+SET.version;
+  document.title='WebOS '+SET.version;try{tick()}catch(e){}};
 const FS=(()=>{let d={'readme.txt':'Welcome to WebOS. Try: help'};try{const s=localStorage.getItem('webos-fs');if(s)d=JSON.parse(s)}catch(e){}return d})();
 const saveFS=()=>{try{localStorage.setItem('webos-fs',JSON.stringify(FS))}catch(e){}};
 const apps={
@@ -80,7 +97,8 @@ const apps={
     const row=document.createElement('div');row.innerHTML='$ ';const inp=document.createElement('input');row.appendChild(inp);
     t.append(out,row);b.appendChild(t);t.onclick=()=>inp.focus();
     const fs=FS,hist=[],t0=Date.now();
-    const cmds={help:()=>'help date time echo whoami apps open <app> clear\nls cat <f> write <f> <text> rm <f>\ncalc <expr> rand flip joke neofetch uptime\ntheme <light|dark> history\nwiki <topic> download <url> (saves to downloads/)',
+    const cmds={help:()=>'help date time echo whoami apps open <app> clear\nls cat <f> write <f> <text> rm <f>\ncalc <expr> rand flip joke neofetch uptime\ntheme <light|dark|auto> history\nwiki <topic> download <url> (saves to downloads/)\nweather <city> curl <url> ver',
+      ver:()=>'WebOS '+SET.version,
       time:()=>new Date().toLocaleTimeString(),
       ls:a=>Object.keys(fs).filter(n=>!a[0]||n.startsWith(a[0].replace(/\/?$/,'/'))).join('  ')||'(empty)',
       cat:a=>fs[a[0]]??'No such file',
@@ -90,10 +108,14 @@ const apps={
       rand:()=>String(Math.floor(Math.random()*100)+1),
       flip:()=>Math.random()<.5?'Heads':'Tails',
       joke:()=>['Why do programmers prefer dark mode? Light attracts bugs.','There are 10 kinds of people: those who know binary and those who don’t.','A SQL query walks into a bar and asks two tables: can I join you?'][Math.floor(Math.random()*3)],
-      neofetch:()=>'  WebOS 0.2\n  Language: '+navigator.language+'\n  Screen: '+innerWidth+'x'+innerHeight+'\n  Apps: '+Object.keys(apps).length,
+      neofetch:()=>'  WebOS '+SET.version+'\n  Language: '+navigator.language+'\n  Screen: '+innerWidth+'x'+innerHeight+'\n  Apps: '+Object.keys(apps).length,
       uptime:()=>Math.floor((Date.now()-t0)/1000)+'s',
-      theme:a=>{if(a[0]==='light'||a[0]==='dark'){document.documentElement.dataset.theme=a[0];return 'theme: '+a[0]}return 'usage: theme light|dark'},
+      theme:a=>{if(['light','dark','auto'].includes(a[0])){SET.theme=a[0];saveSet();applySet();return 'theme: '+a[0]}return 'usage: theme light|dark|auto'},
       history:()=>hist.join('\n')||'(none)',
+      weather:a=>{if(!a.length)return 'usage: weather <city>';
+        return fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(a.join(' '))).then(r=>r.json()).then(g=>{if(!g.results)return 'City not found';const c=g.results[0];
+          return fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.latitude+'&longitude='+c.longitude+'&current=temperature_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph').then(r=>r.json()).then(w=>c.name+': '+w.current.temperature_2m+'°F, wind '+w.current.wind_speed_10m+' mph')}).catch(()=>'Could not reach the weather service.')},
+      curl:a=>{if(!a[0])return 'usage: curl <url>';return fetch(a[0]).then(r=>r.text()).then(x=>x.slice(0,600)+(x.length>600?'\n...':'')).catch(()=>'Request failed (blocked, or the site does not allow it).')},
       wiki:a=>{if(!a.length)return 'usage: wiki <topic>';const q=a.join(' ');
         return fetch('https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles='+encodeURIComponent(q))
           .then(r=>r.json()).then(j=>{const p=Object.values(j.query.pages)[0];if(p.missing!==undefined||!p.extract)return 'No wiki article found for '+q;
@@ -117,19 +139,56 @@ const apps={
   browser:{name:'Browser',icon:'🌐',w:540,h:420,build(b){
     b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
     const home=`<!doctype html><meta charset="utf-8"><base target="_blank"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h2>🌐 WebOS Browser</h2><p>Type a URL or a search term in the bar above.</p><p><a href="https://en.wikipedia.org/wiki/Operating_system">Wikipedia: Operating system</a><br><a href="https://developer.mozilla.org/">MDN Web Docs</a><br><a href="https://example.com/">example.com</a></p>`;
-    b.innerHTML='<div class="nav"><button>◀</button><button>▶</button><button>⟳</button><button>🏠</button><input placeholder="Search Wikipedia or enter a URL"><label><input type="checkbox"> Embed</label><button>↗</button></div><iframe sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe><div class="note">Pages open in a new tab by default. Tick Embed to try showing them here (many sites block this).</div>';
-    const [bk,fw,rl,hm,op]=b.querySelectorAll('.nav button'),inp=b.querySelector('input'),emb=b.querySelector('[type=checkbox]'),f=b.querySelector('iframe');
+    b.innerHTML='<div class="nav"><button>◀</button><button>▶</button><button>⟳</button><button>🏠</button><input placeholder="Search Wikipedia or enter a URL"><label><input type="checkbox"> Embed</label><button>★</button><button>↗</button></div><iframe sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe><div class="note">Pages open in a new tab by default. Tick Embed to try showing them here (many sites block this).</div>';
+    const [bk,fw,rl,hm,st,op]=b.querySelectorAll('.nav button'),inp=b.querySelector('input'),emb=b.querySelector('[type=checkbox]'),f=b.querySelector('iframe');
     let hist=['about:home'],i=0;
+    const bm=()=>{const l=(FS['bookmarks.txt']||'').split('\n').filter(u=>/^https?:\/\//.test(u));return l.length?'<h3>★ Bookmarks</h3><p>'+l.map(u=>{const q=u.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');return '<a href="'+q+'">'+q+'</a>'}).join('<br>')+'</p>':''};
     const card=u=>{const q=u.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');return `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h3>Ready to open</h3><p style="word-break:break-all">${q}</p><p><a href="${q}" target="_blank" rel="noopener">Open in a new tab ↗</a></p><p style="font-size:13px;color:#555">Tick “Embed” above to try showing the site inside this window.</p>`};
     const show=()=>{const u=hist[i];inp.value=u==='about:home'?'':u;
-      if(u==='about:home'){f.removeAttribute('src');f.srcdoc=home}else if(emb.checked){f.removeAttribute('srcdoc');f.src=u}else{f.removeAttribute('src');f.srcdoc=card(u)}};
+      if(u==='about:home'){f.removeAttribute('src');f.srcdoc=home+bm()}else if(emb.checked){f.removeAttribute('srcdoc');f.src=u}else{f.removeAttribute('src');f.srcdoc=card(u)}};
     const norm=v=>/^https?:\/\//i.test(v)?v:(/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v)?'https://'+v:'https://en.wikipedia.org/w/index.php?search='+encodeURIComponent(v));
     const go=v=>{v=v.trim();const u=v?norm(v):'about:home';hist=hist.slice(0,i+1);hist.push(u);i++;show()};
     inp.onkeydown=e=>{if(e.key==='Enter')go(inp.value)};
     bk.onclick=()=>{if(i>0){i--;show()}};fw.onclick=()=>{if(i<hist.length-1){i++;show()}};
     rl.onclick=show;emb.onchange=show;hm.onclick=()=>go('');
+    st.onclick=()=>{const u=hist[i];if(u==='about:home')return;const l=(FS['bookmarks.txt']||'').split('\n').filter(Boolean);if(!l.includes(u)){l.push(u);FS['bookmarks.txt']=l.join('\n');saveFS()}st.textContent='✔';setTimeout(()=>st.textContent='★',1200)};
     op.onclick=()=>{const u=hist[i];if(u!=='about:home')window.open(u,'_blank','noopener')};
     show()}},
+  wiki:{name:'Wikipedia',icon:'📚',w:460,h:420,build(b){
+    b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
+    b.innerHTML='<div class="nav"><input placeholder="Search Wikipedia"><button>Go</button><button>💾 Save</button></div><div class="wres">Search for any topic. Save puts the article in your downloads.</div>';
+    const inp=b.querySelector('input'),[go,sv]=b.querySelectorAll('button'),res=b.querySelector('.wres');let cur=null;
+    const load=async q=>{res.textContent='Loading…';try{
+      const j=await(await fetch('https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles='+encodeURIComponent(q))).json();
+      const p=Object.values(j.query.pages)[0];
+      if(p.missing!==undefined||!p.extract){
+        const s=await(await fetch('https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&limit=8&search='+encodeURIComponent(q))).json();
+        cur=null;res.textContent='';const h=document.createElement('div');h.textContent=s[1].length?'No exact match. Did you mean:':'No results.';res.appendChild(h);
+        s[1].forEach(t=>{const a=document.createElement('div');a.className='wlink';a.textContent=t;a.onclick=()=>{inp.value=t;load(t)};res.appendChild(a)});return}
+      cur=p;res.textContent='';const h=document.createElement('h3'),x=document.createElement('div');h.textContent=p.title;x.className='wtext';x.textContent=p.extract;res.append(h,x);
+    }catch(e){res.textContent='Could not reach Wikipedia. Network requests may be blocked on this page.'}};
+    go.onclick=()=>inp.value.trim()&&load(inp.value.trim());
+    inp.onkeydown=e=>{if(e.key==='Enter')go.click()};
+    sv.onclick=()=>{if(cur){const n='downloads/'+cur.title.replace(/[^\w.-]+/g,'_')+'.txt';FS[n]=cur.extract;saveFS();sv.textContent='✔ Saved';setTimeout(()=>sv.textContent='💾 Save',1500)}}}},
+  weather:{name:'Weather',icon:'⛅',w:340,h:380,build(b){
+    b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
+    b.innerHTML='<div class="nav"><input placeholder="City, e.g. Miami"><button>Go</button><button>°F</button></div><div class="wres">Enter a city to see the forecast.</div>';
+    const inp=b.querySelector('input'),[go,un]=b.querySelectorAll('button'),res=b.querySelector('.wres');let f=true,last='';
+    const sky=c=>c===0?'☀️ Clear':c<4?'⛅ Partly cloudy':c<50?'🌫️ Fog':c<70?'🌧️ Rain':c<80?'❄️ Snow':c<90?'🌦️ Showers':'⛈️ Storm';
+    const row=(a,m)=>{const d=document.createElement('div'),x=document.createElement('span'),y=document.createElement('span');d.className='wrow';x.textContent=a;y.textContent=m;d.append(x,y);return d};
+    const load=async q=>{last=q;res.textContent='Loading…';try{
+      const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(q))).json();
+      if(!g.results){res.textContent='City not found.';return}
+      const c=g.results[0],u=f?'°F':'°C';
+      const w=await(await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.latitude+'&longitude='+c.longitude+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&temperature_unit='+(f?'fahrenheit':'celsius')+'&wind_speed_unit='+(f?'mph':'kmh'))).json();
+      res.textContent='';const h=document.createElement('h2'),t=document.createElement('div');h.textContent=c.name+(c.country?', '+c.country:'');
+      t.style.cssText='font-size:34px;font-weight:700';t.textContent=Math.round(w.current.temperature_2m)+u;
+      res.append(h,t,row(sky(w.current.weather_code),'Wind '+Math.round(w.current.wind_speed_10m)+(f?' mph':' km/h')));
+      const hd=document.createElement('h4');hd.textContent='Next days';res.appendChild(hd);
+      w.daily.time.forEach((d,i)=>res.appendChild(row(new Date(d+'T12:00').toLocaleDateString([],{weekday:'short'})+' '+sky(w.daily.weather_code[i]),Math.round(w.daily.temperature_2m_min[i])+'° / '+Math.round(w.daily.temperature_2m_max[i])+'°')));
+    }catch(e){res.textContent='Could not reach the weather service. Network requests may be blocked on this page.'}};
+    go.onclick=()=>inp.value.trim()&&load(inp.value.trim());inp.onkeydown=e=>{if(e.key==='Enter')go.click()};
+    un.onclick=()=>{f=!f;un.textContent=f?'°F':'°C';if(last)load(last)}}},
   files:{name:'Files',icon:'📁',w:480,h:380,build(b){
     b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
     b.innerHTML='<div class="nav"><button>+ New</button><button>Open</button><button>Rename</button><button>Delete</button><label>⬆ Upload<input type="file" hidden></label></div><div class="nav ask" hidden><input placeholder="File name"><button>OK</button></div><div class="flist"></div><div class="fed" hidden><div class="note fname"></div><textarea></textarea><div class="nav"><button>Save</button><button>Close</button></div></div>';
@@ -171,7 +230,20 @@ const apps={
       else{sn.unshift(h);if(h[0]===f[0]&&h[1]===f[1]){score++;f=[Math.floor(Math.random()*N),Math.floor(Math.random()*N)]}else sn.pop()}
       g.clearRect(0,0,260,260);g.fillStyle='#ff6b6b';g.fillRect(f[0]*Z+2,f[1]*Z+2,Z-4,Z-4);
       g.fillStyle='#5cff8a';sn.forEach(p=>g.fillRect(p[0]*Z+1,p[1]*Z+1,Z-2,Z-2));
-      s.textContent='Score: '+score},130)}}
+      s.textContent='Score: '+score},130)}},
+  settings:{name:'Settings',icon:'⚙️',w:360,h:400,build(b){
+    b.innerHTML='<div class="srow"><label>Version</label><div class="sver"></div></div><div class="srow"><label>Theme</label><select class="st"><option value="auto">Match device</option><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="srow"><label>Wallpaper</label><select class="sb"><option value="default">Default</option><option value="blue">Blue</option><option value="sunset">Sunset</option><option value="forest">Forest</option><option value="night">Night</option></select></div><div class="srow"><label><input type="checkbox" class="sh"> 24-hour clock</label></div><div class="srow"><button class="sr">Reset all files</button> <button class="sx">Reset settings</button></div><div class="note sm"></div>';
+    const q=s=>b.querySelector(s),th=q('.st'),bg=q('.sb'),h=q('.sh'),msg=q('.sm');q('.sver').textContent='WebOS '+SET.version+' (current version)';
+    th.value=SET.theme;bg.value=SET.bg;h.checked=SET.h24;
+    const say=t=>{msg.textContent=t;setTimeout(()=>msg.textContent='',2000)};
+    const upd=()=>{saveSet();applySet()};
+    
+    
+    th.onchange=()=>{SET.theme=th.value;upd()};bg.onchange=()=>{SET.bg=bg.value;upd()};h.onchange=()=>{SET.h24=h.checked;upd()};
+    const rf=q('.sr');let armed=false;
+    rf.onclick=()=>{if(!armed){armed=true;rf.textContent='Click again to confirm';setTimeout(()=>{armed=false;rf.textContent='Reset all files'},3000);return}
+      Object.keys(FS).forEach(k=>delete FS[k]);FS['readme.txt']='Welcome to WebOS. Try: help';saveFS();armed=false;rf.textContent='Reset all files';say('Files reset')};
+    q('.sx').onclick=()=>{Object.assign(SET,{version:'alpha 0.1',theme:'auto',bg:'default',h24:false});upd();th.value='auto';bg.value='default';h.checked=false;say('Settings reset')}}}
 };
 let z=10,n=0;const wins={};
 function openApp(id){
@@ -196,10 +268,10 @@ const desk=document.getElementById('desktop'),menu=document.getElementById('menu
 Object.entries(apps).forEach(([id,a])=>{
   const i=document.createElement('div');i.className='icon';i.innerHTML=`<span class="g">${a.icon}</span>${a.name}`;i.ondblclick=()=>openApp(id);i.onclick=e=>{if(matchMedia('(pointer:coarse)').matches)openApp(id)};desk.appendChild(i);
   const m=document.createElement('div');m.textContent=a.icon+' '+a.name;m.onclick=()=>{openApp(id);menu.style.display='none'};menu.appendChild(m)});
+const vm=document.createElement('div');vm.id='vmark';vm.textContent='WebOS '+SET.version;vm.style.cssText='opacity:.6;font-size:12px;cursor:default';menu.appendChild(vm);
 document.getElementById('start').onclick=e=>{e.stopPropagation();menu.style.display=menu.style.display==='block'?'none':'block'};
 document.addEventListener('click',()=>menu.style.display='none');
-setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),1000);
-document.getElementById('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+const tick=()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:!SET.h24});setInterval(tick,1000);tick();applySet();
 </script>
 </body>
 </html>
