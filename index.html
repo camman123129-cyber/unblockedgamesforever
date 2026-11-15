@@ -65,7 +65,7 @@ textarea{width:100%;height:100%;border:0;resize:none;background:transparent;colo
 <div id="menu"></div>
 <div id="bar"><button id="start">☰ Start</button><div id="tasks"></div><div id="clock"></div></div>
 <script>
-const SET=(()=>{let d={version:'alpha 0.1',theme:'auto',bg:'default',h24:false,engine:'google'};try{Object.assign(d,JSON.parse(localStorage.getItem('webos-set')||'{}'))}catch(e){}d.version='alpha 0.1';return d})();
+const SET=(()=>{let d={version:'Alpha 0.2.0',theme:'auto',bg:'default',h24:false,engine:'google'};try{Object.assign(d,JSON.parse(localStorage.getItem('webos-set')||'{}'))}catch(e){}d.version='Alpha 0.2.0';return d})();
 const saveSet=()=>{try{localStorage.setItem('webos-set',JSON.stringify(SET))}catch(e){}};
 const cseGo=q=>{try{google.search.cse.element.getElement('wsearch').execute(q)}catch(e){}};
 const BGS={blue:['#3b5bdb','#9c36b5'],sunset:['#f76707','#c2255c'],forest:['#2b8a3e','#1864ab'],night:['#212529','#364fc7']};
@@ -253,7 +253,7 @@ const apps={
     const rf=q('.sr');let armed=false;
     rf.onclick=()=>{if(!armed){armed=true;rf.textContent='Click again to confirm';setTimeout(()=>{armed=false;rf.textContent='Reset all files'},3000);return}
       Object.keys(FS).forEach(k=>delete FS[k]);FS['readme.txt']='Welcome to WebOS. Try: help';saveFS();armed=false;rf.textContent='Reset all files';say('Files reset')};
-    q('.sx').onclick=()=>{Object.assign(SET,{version:'alpha 0.1',theme:'auto',bg:'default',h24:false,engine:'google'});upd();th.value='auto';q('.se').value='google';bg.value='default';h.checked=false;say('Settings reset')}}}
+    q('.sx').onclick=()=>{Object.assign(SET,{version:'Alpha 0.2.0',theme:'auto',bg:'default',h24:false,engine:'google'});upd();th.value='auto';q('.se').value='google';bg.value='default';h.checked=false;say('Settings reset')}}}
 };
 let z=10,n=0;const wins={};
 function openApp(id,arg){
