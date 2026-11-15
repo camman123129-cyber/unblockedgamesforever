@@ -65,8 +65,9 @@ textarea{width:100%;height:100%;border:0;resize:none;background:transparent;colo
 <div id="menu"></div>
 <div id="bar"><button id="start">☰ Start</button><div id="tasks"></div><div id="clock"></div></div>
 <script>
-const SET=(()=>{let d={version:'alpha 0.1',theme:'auto',bg:'default',h24:false};try{Object.assign(d,JSON.parse(localStorage.getItem('webos-set')||'{}'))}catch(e){}d.version='alpha 0.1';return d})();
+const SET=(()=>{let d={version:'alpha 0.1',theme:'auto',bg:'default',h24:false,engine:'google'};try{Object.assign(d,JSON.parse(localStorage.getItem('webos-set')||'{}'))}catch(e){}d.version='alpha 0.1';return d})();
 const saveSet=()=>{try{localStorage.setItem('webos-set',JSON.stringify(SET))}catch(e){}};
+const cseGo=q=>{try{google.search.cse.element.getElement('wsearch').execute(q)}catch(e){}};
 const BGS={blue:['#3b5bdb','#9c36b5'],sunset:['#f76707','#c2255c'],forest:['#2b8a3e','#1864ab'],night:['#212529','#364fc7']};
 const applySet=()=>{const r=document.documentElement;
   if(SET.theme==='auto')delete r.dataset.theme;else r.dataset.theme=SET.theme;
@@ -97,7 +98,7 @@ const apps={
     const row=document.createElement('div');row.innerHTML='$ ';const inp=document.createElement('input');row.appendChild(inp);
     t.append(out,row);b.appendChild(t);t.onclick=()=>inp.focus();
     const fs=FS,hist=[],t0=Date.now();
-    const cmds={help:()=>'help date time echo whoami apps open <app> clear\nls cat <f> write <f> <text> rm <f>\ncalc <expr> rand flip joke neofetch uptime\ntheme <light|dark|auto> history\nwiki <topic> download <url> (saves to downloads/)\nweather <city> curl <url> ver',
+    const cmds={help:()=>'help date time echo whoami apps open <app> clear\nls cat <f> write <f> <text> rm <f>\ncalc <expr> rand flip joke neofetch uptime\ntheme <light|dark|auto> history\nwiki <topic> download <url> (saves to downloads/)\nweather <city> curl <url> ver google <search> search <text>',
       ver:()=>'WebOS '+SET.version,
       time:()=>new Date().toLocaleTimeString(),
       ls:a=>Object.keys(fs).filter(n=>!a[0]||n.startsWith(a[0].replace(/\/?$/,'/'))).join('  ')||'(empty)',
@@ -115,6 +116,8 @@ const apps={
       weather:a=>{if(!a.length)return 'usage: weather <city>';
         return fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(a.join(' '))).then(r=>r.json()).then(g=>{if(!g.results)return 'City not found';const c=g.results[0];
           return fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.latitude+'&longitude='+c.longitude+'&current=temperature_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph').then(r=>r.json()).then(w=>c.name+': '+w.current.temperature_2m+'°F, wind '+w.current.wind_speed_10m+' mph')}).catch(()=>'Could not reach the weather service.')},
+      search:a=>{if(!a.length)return 'usage: search <text>';const q=a.join(' '),ex=document.querySelector('.gcse-search');if(ex)cseGo(q);else openApp('search',q);return 'Searching...'},
+      google:a=>{if(!a.length)return 'usage: google <search>';window.open('https://www.google.com/search?q='+encodeURIComponent(a.join(' ')),'_blank','noopener');return 'Opening Google in a new tab...'},
       curl:a=>{if(!a[0])return 'usage: curl <url>';return fetch(a[0]).then(r=>r.text()).then(x=>x.slice(0,600)+(x.length>600?'\n...':'')).catch(()=>'Request failed (blocked, or the site does not allow it).')},
       wiki:a=>{if(!a.length)return 'usage: wiki <topic>';const q=a.join(' ');
         return fetch('https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles='+encodeURIComponent(q))
@@ -138,16 +141,16 @@ const apps={
       t.scrollTop=t.scrollHeight}}},
   browser:{name:'Browser',icon:'🌐',w:540,h:420,build(b){
     b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
-    const home=`<!doctype html><meta charset="utf-8"><base target="_blank"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h2>🌐 WebOS Browser</h2><p>Type a URL or a search term in the bar above.</p><p><a href="https://en.wikipedia.org/wiki/Operating_system">Wikipedia: Operating system</a><br><a href="https://developer.mozilla.org/">MDN Web Docs</a><br><a href="https://example.com/">example.com</a></p>`;
-    b.innerHTML='<div class="nav"><button>◀</button><button>▶</button><button>⟳</button><button>🏠</button><input placeholder="Search Wikipedia or enter a URL"><label><input type="checkbox"> Embed</label><button>★</button><button>↗</button></div><iframe sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe><div class="note">Pages open in a new tab by default. Tick Embed to try showing them here (many sites block this).</div>';
+    const home=`<!doctype html><meta charset="utf-8"><base target="_blank"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h2>🌐 WebOS Browser</h2><p>Type a URL or a search term in the bar above, or search Google here:</p><form action="https://www.google.com/search" method="get"><input name="q" placeholder="Search Google" style="padding:6px;width:65%"> <button style="padding:6px">Search</button></form><p><a href="https://en.wikipedia.org/wiki/Operating_system">Wikipedia: Operating system</a><br><a href="https://developer.mozilla.org/">MDN Web Docs</a><br><a href="https://example.com/">example.com</a></p>`;
+    b.innerHTML='<div class="nav"><button>◀</button><button>▶</button><button>⟳</button><button>🏠</button><input placeholder="Search or enter a URL"><label><input type="checkbox"> Embed</label><button>★</button><button>↗</button></div><iframe sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe><div class="note">Pages open in a new tab by default. Tick Embed to try showing them here (many sites block this).</div>';
     const [bk,fw,rl,hm,st,op]=b.querySelectorAll('.nav button'),inp=b.querySelector('input'),emb=b.querySelector('[type=checkbox]'),f=b.querySelector('iframe');
     let hist=['about:home'],i=0;
     const bm=()=>{const l=(FS['bookmarks.txt']||'').split('\n').filter(u=>/^https?:\/\//.test(u));return l.length?'<h3>★ Bookmarks</h3><p>'+l.map(u=>{const q=u.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');return '<a href="'+q+'">'+q+'</a>'}).join('<br>')+'</p>':''};
-    const card=u=>{const q=u.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');return `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h3>Ready to open</h3><p style="word-break:break-all">${q}</p><p><a href="${q}" target="_blank" rel="noopener">Open in a new tab ↗</a></p><p style="font-size:13px;color:#555">Tick “Embed” above to try showing the site inside this window.</p>`};
+    const card=u=>{const q=u.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');return `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h3>Ready to open</h3><p style="word-break:break-all">${q}</p><p><a href="${q}" target="_blank" rel="noopener">Open in a new tab ↗</a></p><p style="font-size:13px;color:#555">${/^https:\/\/www\.google\./.test(u)?'Google does not allow its results to be shown inside other pages, so they open in a new tab.':'Tick “Embed” above to try showing the site inside this window.'}</p>`};
     const show=()=>{const u=hist[i];inp.value=u==='about:home'?'':u;
-      if(u==='about:home'){f.removeAttribute('src');f.srcdoc=home+bm()}else if(emb.checked){f.removeAttribute('srcdoc');f.src=u}else{f.removeAttribute('src');f.srcdoc=card(u)}};
-    const norm=v=>/^https?:\/\//i.test(v)?v:(/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v)?'https://'+v:'https://en.wikipedia.org/w/index.php?search='+encodeURIComponent(v));
-    const go=v=>{v=v.trim();const u=v?norm(v):'about:home';hist=hist.slice(0,i+1);hist.push(u);i++;show()};
+      if(u==='about:home'){f.removeAttribute('src');f.srcdoc=home+bm()}else if(emb.checked&&!/^https:\/\/www\.google\./.test(u)){f.removeAttribute('srcdoc');f.src=u}else{f.removeAttribute('src');f.srcdoc=card(u)}};
+    const norm=v=>/^https?:\/\//i.test(v)?v:(/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v)?'https://'+v:(SET.engine==='wikipedia'?'https://en.wikipedia.org/w/index.php?search=':'https://www.google.com/search?q=')+encodeURIComponent(v));
+    const go=v=>{v=v.trim();if(SET.engine==='sites'&&v&&!/^https?:\/\//i.test(v)&&!/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v)){const ex=document.querySelector('.gcse-search');if(ex){cseGo(v);ex.closest('.win').style.zIndex=++z}else openApp('search',v);return}const u=v?norm(v):'about:home';hist=hist.slice(0,i+1);hist.push(u);i++;show();if(/^https:\/\/www\.google\.com\/search/.test(u))window.open(u,'_blank','noopener')};
     inp.onkeydown=e=>{if(e.key==='Enter')go(inp.value)};
     bk.onclick=()=>{if(i>0){i--;show()}};fw.onclick=()=>{if(i<hist.length-1){i++;show()}};
     rl.onclick=show;emb.onchange=show;hm.onclick=()=>go('');
@@ -231,10 +234,17 @@ const apps={
       g.clearRect(0,0,260,260);g.fillStyle='#ff6b6b';g.fillRect(f[0]*Z+2,f[1]*Z+2,Z-4,Z-4);
       g.fillStyle='#5cff8a';sn.forEach(p=>g.fillRect(p[0]*Z+1,p[1]*Z+1,Z-2,Z-2));
       s.textContent='Score: '+score},130)}},
+  search:{name:'Search',icon:'🔎',w:520,h:440,build(b,arg){
+    b.style.background='#fff';b.style.color='#222';
+    b.innerHTML='<div class="gcse-search" data-gname="wsearch"></div><div class="note gsn" style="color:#222">Searches the sites set up in your Google search engine.</div>';
+    const fail=()=>{const n=b.querySelector('.gsn');if(n&&!b.querySelector('.gsc-control-cse'))n.textContent='Could not load Google search. It may be blocked on this page.'};
+    const ready=()=>{let n=0;const t=setInterval(()=>{n++;try{if(google.search.cse.element.getElement('wsearch')){clearInterval(t);if(arg)cseGo(arg);return}}catch(e){}if(n>40){clearInterval(t);fail()}},250)};
+    if(window.google&&google.search&&google.search.cse){try{google.search.cse.element.go()}catch(e){}ready()}
+    else{const s=document.createElement('script');s.async=true;s.src='https://cse.google.com/cse.js?cx=c161055f85920409a';s.onerror=fail;document.head.appendChild(s);ready()}}},
   settings:{name:'Settings',icon:'⚙️',w:360,h:400,build(b){
-    b.innerHTML='<div class="srow"><label>Version</label><div class="sver"></div></div><div class="srow"><label>Theme</label><select class="st"><option value="auto">Match device</option><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="srow"><label>Wallpaper</label><select class="sb"><option value="default">Default</option><option value="blue">Blue</option><option value="sunset">Sunset</option><option value="forest">Forest</option><option value="night">Night</option></select></div><div class="srow"><label><input type="checkbox" class="sh"> 24-hour clock</label></div><div class="srow"><button class="sr">Reset all files</button> <button class="sx">Reset settings</button></div><div class="note sm"></div>';
+    b.innerHTML='<div class="srow"><label>Version</label><div class="sver"></div></div><div class="srow"><label>Theme</label><select class="st"><option value="auto">Match device</option><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="srow"><label>Wallpaper</label><select class="sb"><option value="default">Default</option><option value="blue">Blue</option><option value="sunset">Sunset</option><option value="forest">Forest</option><option value="night">Night</option></select></div><div class="srow"><label>Search engine</label><select class="se"><option value="google">Google (new tab)</option><option value="sites">Google (inside WebOS)</option><option value="wikipedia">Wikipedia</option></select></div><div class="srow"><label><input type="checkbox" class="sh"> 24-hour clock</label></div><div class="srow"><button class="sr">Reset all files</button> <button class="sx">Reset settings</button></div><div class="note sm"></div>';
     const q=s=>b.querySelector(s),th=q('.st'),bg=q('.sb'),h=q('.sh'),msg=q('.sm');q('.sver').textContent='WebOS '+SET.version+' (current version)';
-    th.value=SET.theme;bg.value=SET.bg;h.checked=SET.h24;
+    th.value=SET.theme;q('.se').value=SET.engine;q('.se').onchange=e=>{SET.engine=e.target.value;upd()};bg.value=SET.bg;h.checked=SET.h24;
     const say=t=>{msg.textContent=t;setTimeout(()=>msg.textContent='',2000)};
     const upd=()=>{saveSet();applySet()};
     
@@ -243,15 +253,15 @@ const apps={
     const rf=q('.sr');let armed=false;
     rf.onclick=()=>{if(!armed){armed=true;rf.textContent='Click again to confirm';setTimeout(()=>{armed=false;rf.textContent='Reset all files'},3000);return}
       Object.keys(FS).forEach(k=>delete FS[k]);FS['readme.txt']='Welcome to WebOS. Try: help';saveFS();armed=false;rf.textContent='Reset all files';say('Files reset')};
-    q('.sx').onclick=()=>{Object.assign(SET,{version:'alpha 0.1',theme:'auto',bg:'default',h24:false});upd();th.value='auto';bg.value='default';h.checked=false;say('Settings reset')}}}
+    q('.sx').onclick=()=>{Object.assign(SET,{version:'alpha 0.1',theme:'auto',bg:'default',h24:false,engine:'google'});upd();th.value='auto';q('.se').value='google';bg.value='default';h.checked=false;say('Settings reset')}}}
 };
 let z=10,n=0;const wins={};
-function openApp(id){
+function openApp(id,arg){
   const a=apps[id],w=document.createElement('div');w.className='win';
   const W=Math.min(a.w,innerWidth-20);
   w.style.cssText=`width:${W}px;height:${a.h}px;left:${40+(n%6)*28}px;top:${30+(n%6)*28}px;z-index:${++z}`;n++;
   w.innerHTML=`<div class="tb"><span>${a.icon} ${a.name}</span><button class="b-min">–</button><button class="b-close">✕</button></div><div class="body"></div>`;
-  document.getElementById('desktop').appendChild(w);a.build(w.querySelector('.body'));
+  document.getElementById('desktop').appendChild(w);a.build(w.querySelector('.body'),arg);
   const task=document.createElement('button');task.className='task';task.textContent=a.icon+' '+a.name;
   document.getElementById('tasks').appendChild(task);
   const focus=()=>{w.style.zIndex=++z;w.style.display='flex';document.querySelectorAll('.task').forEach(t=>t.classList.remove('on'));task.classList.add('on')};
