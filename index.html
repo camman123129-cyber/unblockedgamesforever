@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WebOS</title>
+<style>
+:root{--bg1:#3b5bdb;--bg2:#9c36b5;--win:#ffffff;--text:#1b1b1f;--bar:rgba(255,255,255,.85);--title:#e9ecef;--accent:#3b5bdb;--border:#ced4da;--term:#101418;--termtext:#5cff8a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#1b2559;--bg2:#4a1d5c;--win:#25262b;--text:#f1f3f5;--bar:rgba(20,20,24,.85);--title:#373a40;--accent:#748ffc;--border:#495057}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);background:linear-gradient(135deg,var(--bg1),var(--bg2))}
+#desktop{position:absolute;inset:0 0 44px 0;padding:12px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start}
+:root[data-theme="dark"]{--bg1:#1b2559;--bg2:#4a1d5c;--win:#25262b;--text:#f1f3f5;--bar:rgba(20,20,24,.85);--title:#373a40;--accent:#748ffc;--border:#495057}
+.nav{display:flex;gap:4px;padding:6px;background:var(--title)}
+.nav button{border:1px solid var(--border);background:var(--win);color:var(--text);border-radius:6px;cursor:pointer;padding:2px 8px}
+.nav input{flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--win);color:var(--text)}
+.body iframe{flex:1;width:100%;border:0;background:#fff}
+.note{font-size:11px;padding:4px 8px;background:var(--title)}
+[hidden]{display:none!important}
+.nav label{border:1px solid var(--border);background:var(--win);color:var(--text);border-radius:6px;cursor:pointer;padding:2px 8px;font-size:13px;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.nav input[type=checkbox]{flex:none}
+.flist{flex:1;overflow:auto;padding:4px;font-size:14px}
+.frow{display:flex;justify-content:space-between;padding:6px 8px;border-radius:6px;cursor:pointer}
+.frow.sel{background:var(--accent);color:#fff}
+.fed{flex:1;display:flex;flex-direction:column;border-top:1px solid var(--border);min-height:0}
+.fed textarea{flex:1;height:auto;min-height:0;padding:8px}
+.icon{width:76px;text-align:center;color:#fff;cursor:pointer;margin-bottom:10px;user-select:none;font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.icon .g{font-size:34px;display:block}
+.win{position:absolute;background:var(--win);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;min-width:220px;min-height:140px}
+.tb{background:var(--title);padding:6px 8px;display:flex;align-items:center;gap:8px;cursor:move;user-select:none;touch-action:none;font-size:13px;font-weight:600}
+.tb span{flex:1}
+.tb button{border:0;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:10px;line-height:1}
+.b-min{background:#fcc419}.b-close{background:#ff6b6b}
+.body{flex:1;overflow:auto;padding:10px}
+textarea{width:100%;height:100%;border:0;resize:none;background:transparent;color:var(--text);font:14px/1.4 system-ui;outline:0}
+.calc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc .disp{grid-column:1/5;background:var(--title);border-radius:6px;padding:10px;text-align:right;font-size:22px;min-height:46px;overflow:hidden}
+.calc button{padding:12px;border:1px solid var(--border);border-radius:6px;background:var(--win);color:var(--text);font-size:16px;cursor:pointer}
+.calc button.op{background:var(--accent);color:#fff;border-color:var(--accent)}
+.term{background:var(--term);color:var(--termtext);font:13px/1.4 ui-monospace,Consolas,monospace;padding:8px;height:100%;overflow:auto;white-space:pre-wrap}
+.term input{background:transparent;border:0;outline:0;color:inherit;font:inherit;width:70%}
+.snake canvas{display:block;margin:0 auto;background:var(--term);border-radius:6px;max-width:100%}
+#bar{position:absolute;left:0;right:0;bottom:0;height:calc(44px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bar);backdrop-filter:blur(10px);display:flex;align-items:center;gap:6px;padding-left:8px;padding-right:8px}
+#start{border:0;background:var(--accent);color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700}
+#tasks{flex:1;display:flex;gap:6px;overflow-x:auto}
+.task{border:1px solid var(--border);background:var(--win);color:var(--text);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;white-space:nowrap}
+.task.on{border-color:var(--accent);font-weight:700}
+#clock{font-size:13px;padding:0 6px;color:var(--text)}
+#menu{position:absolute;left:8px;bottom:calc(52px + env(safe-area-inset-bottom,0px));background:var(--win);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:6px;display:none;min-width:170px}
+#menu div{padding:8px 10px;border-radius:6px;cursor:pointer}
+#menu div:hover{background:var(--title)}
+</style>
+</head>
+<body>
+<div id="desktop"></div>
+<div id="menu"></div>
+<div id="bar"><button id="start">☰ Start</button><div id="tasks"></div><div id="clock"></div></div>
+<script>
+const FS=(()=>{let d={'readme.txt':'Welcome to WebOS. Try: help'};try{const s=localStorage.getItem('webos-fs');if(s)d=JSON.parse(s)}catch(e){}return d})();
+const saveFS=()=>{try{localStorage.setItem('webos-fs',JSON.stringify(FS))}catch(e){}};
+const apps={
+  notes:{name:'Notes',icon:'📝',w:320,h:260,build(b){
+    const t=document.createElement('textarea');t.placeholder='Type something…';
+    try{t.value=localStorage.getItem('webos-note')||''}catch(e){}
+    t.oninput=()=>{try{localStorage.setItem('webos-note',t.value)}catch(e){}};b.appendChild(t)}},
+  calc:{name:'Calculator',icon:'🧮',w:260,h:340,build(b){
+    const c=document.createElement('div');c.className='calc';const d=document.createElement('div');d.className='disp';d.textContent='0';c.appendChild(d);
+    let cur='';
+    '7 8 9 / 4 5 6 * 1 2 3 - 0 . = +'.split(' ').forEach(k=>{
+      const x=document.createElement('button');x.textContent=k;if('/*-+='.includes(k))x.className='op';
+      x.onclick=()=>{
+        if(k==='='){try{cur=String(Function('"use strict";return ('+cur+')')())}catch(e){cur='Error'}}
+        else{if(cur==='Error')cur='';cur+=k}
+        d.textContent=cur||'0'};c.appendChild(x)});
+    const cl=document.createElement('button');cl.textContent='Clear';cl.style.gridColumn='1/5';cl.onclick=()=>{cur='';d.textContent='0'};c.appendChild(cl);
+    b.appendChild(c)}},
+  term:{name:'Terminal',icon:'⌨️',w:420,h:280,build(b){
+    const t=document.createElement('div');t.className='term';b.style.padding='0';
+    const out=document.createElement('div');out.textContent='WebOS terminal. Type help.\n';
+    const row=document.createElement('div');row.innerHTML='$ ';const inp=document.createElement('input');row.appendChild(inp);
+    t.append(out,row);b.appendChild(t);t.onclick=()=>inp.focus();
+    const fs=FS,hist=[],t0=Date.now();
+    const cmds={help:()=>'help date time echo whoami apps open <app> clear\nls cat <f> write <f> <text> rm <f>\ncalc <expr> rand flip joke neofetch uptime\ntheme <light|dark> history\nwiki <topic> download <url> (saves to downloads/)',
+      time:()=>new Date().toLocaleTimeString(),
+      ls:a=>Object.keys(fs).filter(n=>!a[0]||n.startsWith(a[0].replace(/\/?$/,'/'))).join('  ')||'(empty)',
+      cat:a=>fs[a[0]]??'No such file',
+      write:a=>{if(!a[0])return 'usage: write <file> <text>';fs[a[0]]=a.slice(1).join(' ');saveFS();return 'saved '+a[0]},
+      rm:a=>a[0] in fs?(delete fs[a[0]],saveFS(),'removed'):'No such file',
+      calc:a=>{try{return String(Function('"use strict";return ('+a.join(' ')+')')())}catch(e){return 'Bad expression'}},
+      rand:()=>String(Math.floor(Math.random()*100)+1),
+      flip:()=>Math.random()<.5?'Heads':'Tails',
+      joke:()=>['Why do programmers prefer dark mode? Light attracts bugs.','There are 10 kinds of people: those who know binary and those who don’t.','A SQL query walks into a bar and asks two tables: can I join you?'][Math.floor(Math.random()*3)],
+      neofetch:()=>'  WebOS 0.2\n  Language: '+navigator.language+'\n  Screen: '+innerWidth+'x'+innerHeight+'\n  Apps: '+Object.keys(apps).length,
+      uptime:()=>Math.floor((Date.now()-t0)/1000)+'s',
+      theme:a=>{if(a[0]==='light'||a[0]==='dark'){document.documentElement.dataset.theme=a[0];return 'theme: '+a[0]}return 'usage: theme light|dark'},
+      history:()=>hist.join('\n')||'(none)',
+      wiki:a=>{if(!a.length)return 'usage: wiki <topic>';const q=a.join(' ');
+        return fetch('https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles='+encodeURIComponent(q))
+          .then(r=>r.json()).then(j=>{const p=Object.values(j.query.pages)[0];if(p.missing!==undefined||!p.extract)return 'No wiki article found for '+q;
+            const n='downloads/'+p.title.replace(/[^\w.-]+/g,'_')+'.txt';FS[n]=p.extract;saveFS();return 'Saved '+n+' ('+p.extract.length+' chars)'})
+          .catch(()=>'Download failed. Network requests to other sites may be blocked on this page.')},
+      download:a=>{if(!a[0])return 'usage: download <url>';let u;try{u=new URL(a[0])}catch(e){return 'Bad URL'}
+        return fetch(u).then(r=>{if(!r.ok)throw 0;return r.text()}).then(x=>{
+          let n=(u.pathname.split('/').filter(Boolean).pop()||u.hostname).replace(/[^\w.-]+/g,'_');if(!n.includes('.'))n+='.txt';
+          n='downloads/'+n;FS[n]=x;saveFS();return 'Saved '+n+' ('+x.length+' chars)'})
+          .catch(()=>'Download failed. The site may block requests from other pages, or the network is blocked here.')},
+      date:()=>new Date().toString(),whoami:()=>'guest',apps:()=>Object.keys(apps).join(', ')};
+    inp.onkeydown=e=>{if(e.key!=='Enter')return;
+      const v=inp.value.trim();out.textContent+='$ '+v+'\n';inp.value='';
+      const [c,...a]=v.split(' ');
+      if(c==='clear')out.textContent='';
+      else if(c==='echo')out.textContent+=a.join(' ')+'\n';
+      else if(c==='open'){if(apps[a[0]]){openApp(a[0]);out.textContent+='Opening '+a[0]+'\n'}else out.textContent+='No such app\n'}
+      else if(cmds[c]){const r=cmds[c](a);hist.push(v);if(r&&r.then){out.textContent+='working...\n';r.then(x=>{out.textContent+=x+'\n';t.scrollTop=t.scrollHeight})}else out.textContent+=r+'\n'}
+      else if(c)out.textContent+='Command not found: '+c+'\n';
+      t.scrollTop=t.scrollHeight}}},
+  browser:{name:'Browser',icon:'🌐',w:540,h:420,build(b){
+    b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
+    const home=`<!doctype html><meta charset="utf-8"><base target="_blank"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h2>🌐 WebOS Browser</h2><p>Type a URL or a search term in the bar above.</p><p><a href="https://en.wikipedia.org/wiki/Operating_system">Wikipedia: Operating system</a><br><a href="https://developer.mozilla.org/">MDN Web Docs</a><br><a href="https://example.com/">example.com</a></p>`;
+    b.innerHTML='<div class="nav"><button>◀</button><button>▶</button><button>⟳</button><button>🏠</button><input placeholder="Search Wikipedia or enter a URL"><label><input type="checkbox"> Embed</label><button>↗</button></div><iframe sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe><div class="note">Pages open in a new tab by default. Tick Embed to try showing them here (many sites block this).</div>';
+    const [bk,fw,rl,hm,op]=b.querySelectorAll('.nav button'),inp=b.querySelector('input'),emb=b.querySelector('[type=checkbox]'),f=b.querySelector('iframe');
+    let hist=['about:home'],i=0;
+    const card=u=>{const q=u.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');return `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px;max-width:480px;margin:auto"><h3>Ready to open</h3><p style="word-break:break-all">${q}</p><p><a href="${q}" target="_blank" rel="noopener">Open in a new tab ↗</a></p><p style="font-size:13px;color:#555">Tick “Embed” above to try showing the site inside this window.</p>`};
+    const show=()=>{const u=hist[i];inp.value=u==='about:home'?'':u;
+      if(u==='about:home'){f.removeAttribute('src');f.srcdoc=home}else if(emb.checked){f.removeAttribute('srcdoc');f.src=u}else{f.removeAttribute('src');f.srcdoc=card(u)}};
+    const norm=v=>/^https?:\/\//i.test(v)?v:(/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v)?'https://'+v:'https://en.wikipedia.org/w/index.php?search='+encodeURIComponent(v));
+    const go=v=>{v=v.trim();const u=v?norm(v):'about:home';hist=hist.slice(0,i+1);hist.push(u);i++;show()};
+    inp.onkeydown=e=>{if(e.key==='Enter')go(inp.value)};
+    bk.onclick=()=>{if(i>0){i--;show()}};fw.onclick=()=>{if(i<hist.length-1){i++;show()}};
+    rl.onclick=show;emb.onchange=show;hm.onclick=()=>go('');
+    op.onclick=()=>{const u=hist[i];if(u!=='about:home')window.open(u,'_blank','noopener')};
+    show()}},
+  files:{name:'Files',icon:'📁',w:480,h:380,build(b){
+    b.style.padding='0';b.style.display='flex';b.style.flexDirection='column';
+    b.innerHTML='<div class="nav"><button>+ New</button><button>Open</button><button>Rename</button><button>Delete</button><label>⬆ Upload<input type="file" hidden></label></div><div class="nav ask" hidden><input placeholder="File name"><button>OK</button></div><div class="flist"></div><div class="fed" hidden><div class="note fname"></div><textarea></textarea><div class="nav"><button>Save</button><button>Close</button></div></div>';
+    const list=b.querySelector('.flist');let sel=null,cur=null,acb=null;
+    const [nw,op,rn,dl]=b.querySelectorAll('.nav')[0].querySelectorAll('button');
+    const ask=b.querySelector('.ask'),ai=ask.querySelector('input'),ok=ask.querySelector('button');
+    const ed=b.querySelector('.fed'),[sv,cl]=ed.querySelectorAll('button'),ta=ed.querySelector('textarea'),fname=ed.querySelector('.fname');
+    const has=n=>Object.hasOwn(FS,n);
+    const render=()=>{list.textContent='';Object.keys(FS).sort().forEach(n=>{
+      const r=document.createElement('div'),s=document.createElement('span'),m=document.createElement('small');
+      r.className='frow'+(n===sel?' sel':'');s.textContent='📄 '+n;m.textContent=FS[n].length+' B';r.append(s,m);
+      r.onclick=()=>{sel=n;render()};r.ondblclick=()=>openF(n);list.appendChild(r)});
+      if(!list.firstChild)list.textContent='No files yet.'};
+    const openF=n=>{cur=n;ed.hidden=false;fname.textContent='Editing '+n;ta.value=FS[n]};
+    const askFor=(v,cb)=>{ask.hidden=false;ai.value=v;ai.focus();acb=cb};
+    ok.onclick=()=>{const v=ai.value.trim();ask.hidden=true;if(v&&acb)acb(v)};
+    ai.onkeydown=e=>{if(e.key==='Enter')ok.click()};
+    nw.onclick=()=>askFor('untitled.txt',v=>{if(!has(v)){FS[v]='';saveFS();sel=v;render();openF(v)}});
+    op.onclick=()=>{if(sel)openF(sel)};
+    rn.onclick=()=>{if(sel)askFor(sel,v=>{if(v!==sel&&!has(v)){FS[v]=FS[sel];delete FS[sel];sel=v;saveFS();cur=null;ed.hidden=true;render()}})};
+    dl.onclick=()=>{if(sel){delete FS[sel];if(cur===sel){cur=null;ed.hidden=true}sel=null;saveFS();render()}};
+    sv.onclick=()=>{if(cur){FS[cur]=ta.value;saveFS();render()}};
+    cl.onclick=()=>{cur=null;ed.hidden=true};
+    b.querySelector('[type=file]').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{FS[f.name]=String(r.result);saveFS();render()};r.readAsText(f);e.target.value=''};
+    render()}},
+  snake:{name:'Snake',icon:'🐍',w:300,h:360,build(b){
+    b.className+=' snake';const cv=document.createElement('canvas');cv.width=260;cv.height=260;b.appendChild(cv);
+    const s=document.createElement('div');s.style.cssText='text-align:center;margin-top:6px;font-size:13px';s.textContent='Arrow keys or tap the canvas edges';b.appendChild(s);
+    const g=cv.getContext('2d'),N=13,Z=20;let sn=[[6,6]],dir=[1,0],f=[3,3],score=0;
+    const turn=(x,y)=>{if(x!==-dir[0]||y!==-dir[1])dir=[x,y]};
+    const key=e=>{const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(m){turn(...m);e.preventDefault()}};
+    document.addEventListener('keydown',key);
+    cv.onpointerdown=e=>{const r=cv.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2;
+      Math.abs(x)>Math.abs(y)?turn(x>0?1:-1,0):turn(0,y>0?1:-1)};
+    const tick=setInterval(()=>{
+      if(!cv.isConnected){clearInterval(tick);document.removeEventListener('keydown',key);return}
+      const h=[sn[0][0]+dir[0],sn[0][1]+dir[1]];
+      if(h[0]<0||h[1]<0||h[0]>=N||h[1]>=N||sn.some(p=>p[0]===h[0]&&p[1]===h[1])){sn=[[6,6]];dir=[1,0];score=0}
+      else{sn.unshift(h);if(h[0]===f[0]&&h[1]===f[1]){score++;f=[Math.floor(Math.random()*N),Math.floor(Math.random()*N)]}else sn.pop()}
+      g.clearRect(0,0,260,260);g.fillStyle='#ff6b6b';g.fillRect(f[0]*Z+2,f[1]*Z+2,Z-4,Z-4);
+      g.fillStyle='#5cff8a';sn.forEach(p=>g.fillRect(p[0]*Z+1,p[1]*Z+1,Z-2,Z-2));
+      s.textContent='Score: '+score},130)}}
+};
+let z=10,n=0;const wins={};
+function openApp(id){
+  const a=apps[id],w=document.createElement('div');w.className='win';
+  const W=Math.min(a.w,innerWidth-20);
+  w.style.cssText=`width:${W}px;height:${a.h}px;left:${40+(n%6)*28}px;top:${30+(n%6)*28}px;z-index:${++z}`;n++;
+  w.innerHTML=`<div class="tb"><span>${a.icon} ${a.name}</span><button class="b-min">–</button><button class="b-close">✕</button></div><div class="body"></div>`;
+  document.getElementById('desktop').appendChild(w);a.build(w.querySelector('.body'));
+  const task=document.createElement('button');task.className='task';task.textContent=a.icon+' '+a.name;
+  document.getElementById('tasks').appendChild(task);
+  const focus=()=>{w.style.zIndex=++z;w.style.display='flex';document.querySelectorAll('.task').forEach(t=>t.classList.remove('on'));task.classList.add('on')};
+  w.addEventListener('pointerdown',focus);focus();
+  task.onclick=()=>{w.style.display==='none'||!task.classList.contains('on')?focus():(w.style.display='none',task.classList.remove('on'))};
+  w.querySelector('.b-close').onclick=()=>{w.remove();task.remove()};
+  w.querySelector('.b-min').onclick=()=>{w.style.display='none';task.classList.remove('on')};
+  const tb=w.querySelector('.tb');let ox,oy,drag=false;
+  tb.onpointerdown=e=>{if(e.target.tagName==='BUTTON')return;drag=true;ox=e.clientX-w.offsetLeft;oy=e.clientY-w.offsetTop;tb.setPointerCapture(e.pointerId)};
+  tb.onpointermove=e=>{if(drag){w.style.left=Math.max(0,e.clientX-ox)+'px';w.style.top=Math.max(0,e.clientY-oy)+'px'}};
+  tb.onpointerup=()=>drag=false;
+}
+const desk=document.getElementById('desktop'),menu=document.getElementById('menu');
+Object.entries(apps).forEach(([id,a])=>{
+  const i=document.createElement('div');i.className='icon';i.innerHTML=`<span class="g">${a.icon}</span>${a.name}`;i.ondblclick=()=>openApp(id);i.onclick=e=>{if(matchMedia('(pointer:coarse)').matches)openApp(id)};desk.appendChild(i);
+  const m=document.createElement('div');m.textContent=a.icon+' '+a.name;m.onclick=()=>{openApp(id);menu.style.display='none'};menu.appendChild(m)});
+document.getElementById('start').onclick=e=>{e.stopPropagation();menu.style.display=menu.style.display==='block'?'none':'block'};
+document.addEventListener('click',()=>menu.style.display='none');
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),1000);
+document.getElementById('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+</script>
+</body>
+</html>
